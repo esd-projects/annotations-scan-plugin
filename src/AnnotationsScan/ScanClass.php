@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: administrato
+ * User: 白猫
  * Date: 2019/5/14
  * Time: 11:30
  */
@@ -10,9 +10,12 @@ namespace ESD\Plugins\AnnotationsScan;
 
 
 use Doctrine\Common\Annotations\CachedReader;
+use ReflectionClass;
+use ReflectionMethod;
 
 class ScanClass
 {
+    private $annotationMethod = [];
     private $annotationClass = [];
     /**
      * @var CachedReader
@@ -32,22 +35,30 @@ class ScanClass
         return $this->annotationClass;
     }
 
-    public function addAnnotationClass($annClass, $class)
+    public function addAnnotationClass($annClass, ReflectionClass $reflectionClass)
     {
         if (isset($this->annotationClass[$annClass])) {
             $this->annotationClass[$annClass] = [];
         }
-        $this->annotationClass[$annClass][] = $class;
+        $this->annotationClass[$annClass][] = $reflectionClass;
+    }
+
+    public function addAnnotationMethod(string $annClass, ReflectionMethod $reflectionMethod)
+    {
+        if (isset($this->annotationMethod[$annClass])) {
+            $this->annotationMethod[$annClass] = [];
+        }
+        $this->annotationMethod[$annClass][] = $reflectionMethod;
     }
 
     /**
-     * 获取注解类
+     * 通过注解类名获取相关类
      * @param $annClass
-     * @return mixed|null
+     * @return ReflectionClass[]
      */
-    public function getAnnotationClasses($annClass)
+    public function findClassesByAnn($annClass)
     {
-        return $this->annotationClass[$annClass] ?? null;
+        return $this->annotationClass[$annClass] ?? [];
     }
 
     /**
@@ -57,4 +68,24 @@ class ScanClass
     {
         return $this->cachedReader;
     }
+
+    /**
+     * 通过注解类名获取相关方法
+     * @param $annClass
+     * @return ReflectionMethod[]
+     */
+    public function findMethodsByAnn($annClass)
+    {
+        return $this->annotationMethod[$annClass] ?? [];
+    }
+
+    /**
+     * @return array
+     */
+    public function getAnnotationMethod(): array
+    {
+        return $this->annotationMethod;
+    }
+
+
 }

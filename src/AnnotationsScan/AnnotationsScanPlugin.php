@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: administrato
+ * User: 白猫
  * Date: 2019/5/13
  * Time: 17:21
  */
@@ -10,6 +10,7 @@ namespace ESD\Plugins\AnnotationsScan;
 
 
 use Doctrine\Common\Annotations\CachedReader;
+use ESD\BaseServer\Plugins\Logger\GetLogger;
 use ESD\BaseServer\Server\Context;
 use ESD\BaseServer\Server\PlugIn\AbstractPlugin;
 use ESD\BaseServer\Server\PlugIn\PluginInterfaceManager;
@@ -17,9 +18,11 @@ use ESD\BaseServer\Server\Server;
 use ESD\Plugins\AnnotationsScan\Annotation\Component;
 use ESD\Plugins\Aop\AopPlugin;
 use ReflectionClass;
+use function DI\get;
 
 class AnnotationsScanPlugin extends AbstractPlugin
 {
+    use GetLogger;
     /**
      * @var AnnotationsScanConfig|null
      */
@@ -132,11 +135,24 @@ class AnnotationsScanPlugin extends AbstractPlugin
                     if (class_exists($class)) {
                         $reflectionClass = new ReflectionClass($class);
                         $has = $this->cacheReader->getClassAnnotation($reflectionClass, Component::class);
+                        //只有继承Component注解的才会被扫描并且自动注入DI
                         if ($has != null) {
                             $annotations = $this->cacheReader->getClassAnnotations($reflectionClass);
                             foreach ($annotations as $annotation) {
-                                $this->scanClass->addAnnotationClass(get_class($annotation), $class);
+                                $annotationClass = get_class($annotation);
+                                $this->debug("Find a class annotation $annotationClass in $class");
+                                $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
                             }
+                            foreach ($reflectionClass->getMethods() as $reflectionMethod) {
+                                $annotations = $this->cacheReader->getMethodAnnotations($reflectionMethod);
+                                foreach ($annotations as $annotation) {
+                                    $annotationClass = get_class($annotation);
+                                    $this->debug("Find a method annotation $annotationClass in $class::$reflectionMethod->name");
+                                    $this->scanClass->addAnnotationMethod($annotationClass, $reflectionMethod);
+                                }
+                            }
+                            $this->debug("Add component $class to DI");
+                            $this->setToDIContainer($class, get($class));
                         }
                     }
                 }
