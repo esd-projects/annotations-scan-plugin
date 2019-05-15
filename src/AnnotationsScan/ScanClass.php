@@ -37,7 +37,7 @@ class ScanClass
 
     public function addAnnotationClass($annClass, ReflectionClass $reflectionClass)
     {
-        if (isset($this->annotationClass[$annClass])) {
+        if (!isset($this->annotationClass[$annClass])) {
             $this->annotationClass[$annClass] = [];
         }
         $this->annotationClass[$annClass][] = $reflectionClass;
@@ -45,7 +45,7 @@ class ScanClass
 
     public function addAnnotationMethod(string $annClass, ReflectionMethod $reflectionMethod)
     {
-        if (isset($this->annotationMethod[$annClass])) {
+        if (!isset($this->annotationMethod[$annClass])) {
             $this->annotationMethod[$annClass] = [];
         }
         $this->annotationMethod[$annClass][] = $reflectionMethod;
