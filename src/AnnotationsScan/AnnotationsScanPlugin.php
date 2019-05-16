@@ -106,6 +106,8 @@ class AnnotationsScanPlugin extends AbstractPlugin
                 //返回文件夹数组
                 return $files;
             }
+        }else{
+            return $files;
         }
     }
 
