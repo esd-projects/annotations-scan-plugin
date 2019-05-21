@@ -151,6 +151,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
                                 }
                             }
                             foreach ($reflectionClass->getMethods() as $reflectionMethod) {
+                                $reflectionMethod->reflectionClass = $reflectionClass;
                                 $annotations = $this->cacheReader->getMethodAnnotations($reflectionMethod);
                                 foreach ($annotations as $annotation) {
                                     $annotationClass = get_class($annotation);
