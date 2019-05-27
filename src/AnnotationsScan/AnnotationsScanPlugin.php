@@ -9,16 +9,19 @@
 namespace ESD\Plugins\AnnotationsScan;
 
 
+use DI\DependencyException;
 use Doctrine\Common\Annotations\Annotation;
 use Doctrine\Common\Annotations\CachedReader;
-use ESD\BaseServer\Plugins\Logger\GetLogger;
-use ESD\BaseServer\Server\Context;
-use ESD\BaseServer\Server\PlugIn\AbstractPlugin;
-use ESD\BaseServer\Server\PlugIn\PluginInterfaceManager;
-use ESD\BaseServer\Server\Server;
+use ESD\Core\Context\Context;
+use ESD\Core\Exception;
+use ESD\Core\PlugIn\AbstractPlugin;
+use ESD\Core\PlugIn\PluginInterfaceManager;
+use ESD\Core\Plugins\Logger\GetLogger;
+use ESD\Core\Server\Server;
 use ESD\Plugins\AnnotationsScan\Annotation\Component;
 use ESD\Plugins\Aop\AopPlugin;
 use ReflectionClass;
+use ReflectionException;
 
 class AnnotationsScanPlugin extends AbstractPlugin
 {
@@ -40,8 +43,9 @@ class AnnotationsScanPlugin extends AbstractPlugin
     /**
      * AnnotationsScanPlugin constructor.
      * @param AnnotationsScanConfig|null $annotationsScanConfig
-     * @throws \DI\DependencyException
-     * @throws \ReflectionException
+     * @throws DependencyException
+     * @throws ReflectionException
+     * @throws \DI\NotFoundException
      */
     public function __construct(?AnnotationsScanConfig $annotationsScanConfig = null)
     {
@@ -56,9 +60,10 @@ class AnnotationsScanPlugin extends AbstractPlugin
     /**
      * @param PluginInterfaceManager $pluginInterfaceManager
      * @return mixed|void
-     * @throws \DI\DependencyException
-     * @throws \ESD\BaseServer\Exception
-     * @throws \ReflectionException
+     * @throws DependencyException
+     * @throws Exception
+     * @throws ReflectionException
+     * @throws \DI\NotFoundException
      */
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
@@ -115,21 +120,21 @@ class AnnotationsScanPlugin extends AbstractPlugin
      * 在服务启动前
      * @param Context $context
      * @return mixed
-     * @throws \DI\DependencyException
+     * @throws DependencyException
+     * @throws Exception
+     * @throws ReflectionException
      * @throws \DI\NotFoundException
-     * @throws \ESD\BaseServer\Exception
-     * @throws \ESD\BaseServer\Server\Exception\ConfigException
-     * @throws \ReflectionException
      */
     public function beforeServerStart(Context $context)
     {
         //默认添加src目录
         $this->annotationsScanConfig->addIncludePath(Server::$instance->getServerConfig()->getSrcDir());
         $this->annotationsScanConfig->merge();
-        $this->cacheReader = Server::$instance->getContainer()->get(CachedReader::class);
+        $this->cacheReader = DIget(CachedReader::class);
         $this->scanClass = new ScanClass($this->cacheReader);
         $this->setToDIContainer(ScanClass::class, $this->scanClass);
-        foreach ($this->annotationsScanConfig->getIncludePaths() as $path) {
+        $paths = array_unique($this->annotationsScanConfig->getIncludePaths());
+        foreach ($paths as $path) {
             $files = $this->scanPhp($path);
             foreach ($files as $file) {
                 $class = $this->getClassFromFile($file);
@@ -151,16 +156,16 @@ class AnnotationsScanPlugin extends AbstractPlugin
                                 }
                             }
                             foreach ($reflectionClass->getMethods() as $reflectionMethod) {
-                                $reflectionMethod->reflectionClass = $reflectionClass;
+                                $scanReflectionMethod = new ScanReflectionMethod($reflectionClass, $reflectionMethod);
                                 $annotations = $this->cacheReader->getMethodAnnotations($reflectionMethod);
                                 foreach ($annotations as $annotation) {
                                     $annotationClass = get_class($annotation);
                                     $this->debug("Find a method annotation $annotationClass in $class::$reflectionMethod->name");
-                                    $this->scanClass->addAnnotationMethod($annotationClass, $reflectionMethod);
+                                    $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
                                     $annotationClass = get_parent_class($annotation);
                                     if ($annotationClass != Annotation::class) {
                                         $this->debug("Find a method annotation $annotationClass in $class::$reflectionMethod->name");
-                                        $this->scanClass->addAnnotationMethod($annotationClass, $reflectionMethod);
+                                        $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
                                     }
                                 }
                             }

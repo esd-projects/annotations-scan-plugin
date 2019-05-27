@@ -9,7 +9,7 @@
 namespace ESD\Plugins\AnnotationsScan;
 
 
-use ESD\BaseServer\Plugins\Event\Event;
+use ESD\Core\Event\Event;
 
 class ScanEvent extends Event
 {
