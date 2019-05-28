@@ -63,7 +63,6 @@ class AnnotationsScanPlugin extends AbstractPlugin
      * @throws DependencyException
      * @throws Exception
      * @throws ReflectionException
-     * @throws \DI\NotFoundException
      */
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
@@ -123,14 +122,14 @@ class AnnotationsScanPlugin extends AbstractPlugin
      * @throws DependencyException
      * @throws Exception
      * @throws ReflectionException
-     * @throws \DI\NotFoundException
+     * @throws \Exception
      */
     public function beforeServerStart(Context $context)
     {
         //默认添加src目录
         $this->annotationsScanConfig->addIncludePath(Server::$instance->getServerConfig()->getSrcDir());
         $this->annotationsScanConfig->merge();
-        $this->cacheReader = DIget(CachedReader::class);
+        $this->cacheReader = DIGet(CachedReader::class);
         $this->scanClass = new ScanClass($this->cacheReader);
         $this->setToDIContainer(ScanClass::class, $this->scanClass);
         $paths = array_unique($this->annotationsScanConfig->getIncludePaths());
