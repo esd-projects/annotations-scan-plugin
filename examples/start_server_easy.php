@@ -1,7 +1,7 @@
 <?php
 
-use ESD\BaseServer\ExampleClass\Server\DefaultServer;
 use ESD\Plugins\AnnotationsScan\AnnotationsScanPlugin;
+use ESD\Server\Co\ExampleClass\DefaultServer;
 
 require __DIR__ . '/../vendor/autoload.php';
 

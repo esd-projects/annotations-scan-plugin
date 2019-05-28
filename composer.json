@@ -3,6 +3,10 @@
     "esd/esd-core":"~0.1",
     "esd/aop-plugin":"~0.1"
   },
+
+  "require-dev": {
+    "esd/esd-co-server": "~0.1"
+  },
   "autoload": {
     "psr-4": {
       "ESD\\Plugins\\": "src/"
