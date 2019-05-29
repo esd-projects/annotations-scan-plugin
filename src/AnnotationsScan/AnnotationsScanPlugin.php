@@ -11,7 +11,9 @@ namespace ESD\Plugins\AnnotationsScan;
 
 use DI\DependencyException;
 use Doctrine\Common\Annotations\Annotation;
+use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\CachedReader;
+use Doctrine\Common\Cache\FilesystemCache;
 use ESD\Core\Context\Context;
 use ESD\Core\Exception;
 use ESD\Core\PlugIn\AbstractPlugin;
@@ -54,7 +56,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
             $annotationsScanConfig = new AnnotationsScanConfig();
         }
         $this->annotationsScanConfig = $annotationsScanConfig;
-        $this->atAfter(AopPlugin::class);
+        $this->atBefore(AopPlugin::class);
     }
 
     /**
@@ -111,7 +113,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
                 //返回文件夹数组
                 return $files;
             }
-        }else{
+        } else {
             return $files;
         }
     }
@@ -124,13 +126,17 @@ class AnnotationsScanPlugin extends AbstractPlugin
      * @throws Exception
      * @throws ReflectionException
      * @throws \DI\NotFoundException
+     * @throws \Doctrine\Common\Annotations\AnnotationException
      */
     public function beforeServerStart(Context $context)
     {
         //默认添加src目录
         $this->annotationsScanConfig->addIncludePath(Server::$instance->getServerConfig()->getSrcDir());
         $this->annotationsScanConfig->merge();
-        $this->cacheReader = DIget(CachedReader::class);
+        $cache = new FilesystemCache(
+            Server::$instance->getServerConfig()->getCacheDir() . DIRECTORY_SEPARATOR . '_annotations' . DIRECTORY_SEPARATOR,
+            '.annotations.cache');
+        $this->cacheReader = new CachedReader(new AnnotationReader(), $cache);
         $this->scanClass = new ScanClass($this->cacheReader);
         $this->setToDIContainer(ScanClass::class, $this->scanClass);
         $paths = array_unique($this->annotationsScanConfig->getIncludePaths());
