@@ -56,7 +56,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
             $annotationsScanConfig = new AnnotationsScanConfig();
         }
         $this->annotationsScanConfig = $annotationsScanConfig;
-        $this->atBefore(AopPlugin::class);
+        $this->atAfter(AopPlugin::class);
     }
 
     /**
