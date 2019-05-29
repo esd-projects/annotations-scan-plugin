@@ -134,7 +134,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
         $this->annotationsScanConfig->addIncludePath(Server::$instance->getServerConfig()->getSrcDir());
         $this->annotationsScanConfig->merge();
         $cache = new FilesystemCache(
-            Server::$instance->getServerConfig()->getCacheDir() . DIRECTORY_SEPARATOR . '_annotations' . DIRECTORY_SEPARATOR,
+            Server::$instance->getServerConfig()->getCacheDir() . DIRECTORY_SEPARATOR . '_annotations_scan' . DIRECTORY_SEPARATOR,
             '.annotations.cache');
         $this->cacheReader = new CachedReader(new AnnotationReader(), $cache);
         $this->scanClass = new ScanClass($this->cacheReader);
