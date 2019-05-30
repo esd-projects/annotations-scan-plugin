@@ -13,6 +13,7 @@ use DI\DependencyException;
 use Doctrine\Common\Annotations\Annotation;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\CachedReader;
+use Doctrine\Common\Cache\ArrayCache;
 use Doctrine\Common\Cache\FilesystemCache;
 use ESD\Core\Context\Context;
 use ESD\Core\Exception;
@@ -133,9 +134,13 @@ class AnnotationsScanPlugin extends AbstractPlugin
         //默认添加src目录
         $this->annotationsScanConfig->addIncludePath(Server::$instance->getServerConfig()->getSrcDir());
         $this->annotationsScanConfig->merge();
-        $cache = new FilesystemCache(
-            Server::$instance->getServerConfig()->getCacheDir() . DIRECTORY_SEPARATOR . '_annotations_scan' . DIRECTORY_SEPARATOR,
-            '.annotations.cache');
+        if($this->annotationsScanConfig->isFileCache()) {
+            $cache = new FilesystemCache(
+                Server::$instance->getServerConfig()->getCacheDir() . DIRECTORY_SEPARATOR . '_annotations_scan' . DIRECTORY_SEPARATOR,
+                '.annotations.cache');
+        }else{
+            $cache = new ArrayCache();
+        }
         $this->cacheReader = new CachedReader(new AnnotationReader(), $cache);
         $this->scanClass = new ScanClass($this->cacheReader);
         $this->setToDIContainer(ScanClass::class, $this->scanClass);

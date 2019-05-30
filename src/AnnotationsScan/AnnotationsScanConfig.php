@@ -19,6 +19,12 @@ class AnnotationsScanConfig extends BaseConfig
      */
     protected $includePaths = [];
 
+    /**
+     * 是否文件缓存，默认内存缓存
+     * @var bool
+     */
+    protected $fileCache = false;
+
     public function __construct()
     {
         parent::__construct(self::key);
@@ -50,5 +56,21 @@ class AnnotationsScanConfig extends BaseConfig
         $key = str_replace(realpath(ROOT_DIR),"",$includePath);
         $key = str_replace("/",".",$key);
         $this->includePaths[$key] = $includePath;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isFileCache(): bool
+    {
+        return $this->fileCache;
+    }
+
+    /**
+     * @param bool $fileCache
+     */
+    public function setFileCache(bool $fileCache): void
+    {
+        $this->fileCache = $fileCache;
     }
 }
