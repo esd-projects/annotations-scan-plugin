@@ -123,68 +123,10 @@ class AnnotationsScanPlugin extends AbstractPlugin
      * 在服务启动前
      * @param Context $context
      * @return mixed
-     * @throws DependencyException
-     * @throws Exception
-     * @throws ReflectionException
-     * @throws \DI\NotFoundException
-     * @throws \Doctrine\Common\Annotations\AnnotationException
      */
     public function beforeServerStart(Context $context)
     {
-        //默认添加src目录
-        $this->annotationsScanConfig->addIncludePath(Server::$instance->getServerConfig()->getSrcDir());
-        $this->annotationsScanConfig->merge();
-        if($this->annotationsScanConfig->isFileCache()) {
-            $cache = new FilesystemCache(
-                Server::$instance->getServerConfig()->getCacheDir() . DIRECTORY_SEPARATOR . '_annotations_scan' . DIRECTORY_SEPARATOR,
-                '.annotations.cache');
-        }else{
-            $cache = new ArrayCache();
-        }
-        $this->cacheReader = new CachedReader(new AnnotationReader(), $cache);
-        $this->scanClass = new ScanClass($this->cacheReader);
-        $this->setToDIContainer(ScanClass::class, $this->scanClass);
-        $paths = array_unique($this->annotationsScanConfig->getIncludePaths());
-        foreach ($paths as $path) {
-            $files = $this->scanPhp($path);
-            foreach ($files as $file) {
-                $class = $this->getClassFromFile($file);
-                if ($class != null) {
-                    if (class_exists($class)) {
-                        $reflectionClass = new ReflectionClass($class);
-                        $has = $this->cacheReader->getClassAnnotation($reflectionClass, Component::class);
-                        //只有继承Component注解的才会被扫描
-                        if ($has != null) {
-                            $annotations = $this->cacheReader->getClassAnnotations($reflectionClass);
-                            foreach ($annotations as $annotation) {
-                                $annotationClass = get_class($annotation);
-                                $this->debug("Find a class annotation $annotationClass in $class");
-                                $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
-                                $annotationClass = get_parent_class($annotation);
-                                if ($annotationClass != Annotation::class) {
-                                    $this->debug("Find a class annotation $annotationClass in $class");
-                                    $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
-                                }
-                            }
-                            foreach ($reflectionClass->getMethods() as $reflectionMethod) {
-                                $scanReflectionMethod = new ScanReflectionMethod($reflectionClass, $reflectionMethod);
-                                $annotations = $this->cacheReader->getMethodAnnotations($reflectionMethod);
-                                foreach ($annotations as $annotation) {
-                                    $annotationClass = get_class($annotation);
-                                    $this->debug("Find a method annotation $annotationClass in $class::$reflectionMethod->name");
-                                    $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
-                                    $annotationClass = get_parent_class($annotation);
-                                    if ($annotationClass != Annotation::class) {
-                                        $this->debug("Find a method annotation $annotationClass in $class::$reflectionMethod->name");
-                                        $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        return;
     }
 
     /**
@@ -250,16 +192,82 @@ class AnnotationsScanPlugin extends AbstractPlugin
         if (empty($class)) return null;
         //Build the fully-qualified class name and return it
         return $namespace ? $namespace . '\\' . $class : $class;
-
     }
 
     /**
      * 在进程启动前
      * @param Context $context
-     * @return mixed
+     * @throws DependencyException
+     * @throws Exception
+     * @throws ReflectionException
+     * @throws \DI\NotFoundException
+     * @throws \Doctrine\Common\Annotations\AnnotationException
+     * @throws \ESD\Core\Plugins\Config\ConfigException
      */
     public function beforeProcessStart(Context $context)
     {
+        //默认添加src目录
+        $this->annotationsScanConfig->addIncludePath(Server::$instance->getServerConfig()->getSrcDir());
+        $this->annotationsScanConfig->merge();
+        if ($this->annotationsScanConfig->isFileCache()) {
+            $cache = new FilesystemCache(
+                Server::$instance->getServerConfig()->getCacheDir() . DIRECTORY_SEPARATOR . '_annotations_scan' . DIRECTORY_SEPARATOR,
+                '.annotations.cache');
+        } else {
+            $cache = new ArrayCache();
+        }
+        $this->cacheReader = new CachedReader(new AnnotationReader(), $cache);
+        $this->scanClass = new ScanClass($this->cacheReader);
+        $this->setToDIContainer(ScanClass::class, $this->scanClass);
+        $paths = array_unique($this->annotationsScanConfig->getIncludePaths());
+        foreach ($paths as $path) {
+            $files = $this->scanPhp($path);
+            foreach ($files as $file) {
+                $class = $this->getClassFromFile($file);
+                if ($class != null) {
+                    if (class_exists($class)) {
+                        $reflectionClass = new ReflectionClass($class);
+                        $has = $this->cacheReader->getClassAnnotation($reflectionClass, Component::class);
+                        //只有继承Component注解的才会被扫描
+                        if ($has != null) {
+                            $annotations = $this->cacheReader->getClassAnnotations($reflectionClass);
+                            foreach ($annotations as $annotation) {
+                                $annotationClass = get_class($annotation);
+                                if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
+                                    $this->debug("Find a class annotation $annotationClass in $class");
+                                }
+                                $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
+                                $annotationClass = get_parent_class($annotation);
+                                if ($annotationClass != Annotation::class) {
+                                    if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
+                                        $this->debug("Find a class annotation $annotationClass in $class");
+                                    }
+                                    $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
+                                }
+                            }
+                            foreach ($reflectionClass->getMethods() as $reflectionMethod) {
+                                $scanReflectionMethod = new ScanReflectionMethod($reflectionClass, $reflectionMethod);
+                                $annotations = $this->cacheReader->getMethodAnnotations($reflectionMethod);
+                                foreach ($annotations as $annotation) {
+                                    $annotationClass = get_class($annotation);
+                                    if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
+                                        $this->debug("Find a method annotation $annotationClass in $class::$reflectionMethod->name");
+                                    }
+                                    $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
+                                    $annotationClass = get_parent_class($annotation);
+                                    if ($annotationClass != Annotation::class) {
+                                        if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
+                                            $this->debug("Find a method annotation $annotationClass in $class::$reflectionMethod->name");
+                                        }
+                                        $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         $this->ready();
     }
 }
