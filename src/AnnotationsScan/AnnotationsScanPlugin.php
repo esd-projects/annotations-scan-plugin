@@ -218,6 +218,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
         }
         $this->cacheReader = new CachedReader(new AnnotationReader(), $cache);
         $this->scanClass = new ScanClass($this->cacheReader);
+        $this->setToDIContainer(CachedReader::class, $this->cacheReader);
         $this->setToDIContainer(ScanClass::class, $this->scanClass);
         $paths = array_unique($this->annotationsScanConfig->getIncludePaths());
         foreach ($paths as $path) {
