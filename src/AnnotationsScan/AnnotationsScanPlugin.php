@@ -154,10 +154,9 @@ class AnnotationsScanPlugin extends AbstractPlugin
             }
 
             //If this token is the class declaring, then flag that the next tokens will be the class name
-            if (is_array($token) && $token[0] == T_CLASS) {
+            if (is_array($token) && ($token[0] == T_CLASS || $token[0] == T_INTERFACE)) {
                 $getting_class = true;
             }
-
             //While we're grabbing the namespace name...
             if ($getting_namespace === true) {
 
@@ -226,7 +225,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
             foreach ($files as $file) {
                 $class = $this->getClassFromFile($file);
                 if ($class != null) {
-                    if (class_exists($class)) {
+                    if (interface_exists($class) || class_exists($class)) {
                         $reflectionClass = new ReflectionClass($class);
                         $has = $this->cacheReader->getClassAnnotation($reflectionClass, Component::class);
                         //只有继承Component注解的才会被扫描
